@@ -10,7 +10,7 @@ import { supabase } from '@/lib/supabase';
 import { SetupModal } from '@/components/SetupModal';
 import { MoneyLadder } from '@/components/MoneyLadder';
 import { CheckModal } from '@/components/CheckModal';
-import { PhoneModal, CompanionModal, SageModal } from '@/components/LifelineModals';
+import { PhoneModal, CompanionModal, SageModal, getDisplayCategory } from '@/components/LifelineModals';
 import { GameOverModal } from '@/components/GameOverModal';
 import { LeaderboardModal } from '@/components/LeaderboardModal';
 
@@ -521,7 +521,7 @@ export default function GamePage() {
                 CÂU HỎI SỐ {currentLevel} / 15 • {currentPrizeItem?.prizeFormatted}
               </span>
               <span className="px-2 sm:px-3 py-0.5 rounded-full bg-blue-950/90 border border-amber-400/50 text-amber-300 font-bold text-[9px] sm:text-[11px] uppercase tracking-wider shadow">
-                Chuyên đề: {currentQuestion?.category || 'Kiến thức chung'}
+                Chuyên đề: {getDisplayCategory(currentQuestion?.category || '')}
               </span>
             </div>
 
