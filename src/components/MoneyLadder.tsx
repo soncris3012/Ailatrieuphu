@@ -17,21 +17,22 @@ export const MoneyLadder: React.FC<MoneyLadderProps> = ({ currentLevel, isOpen, 
       {isOpen && (
         <div
           onClick={onClose}
-          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden transition-opacity"
+          className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm lg:hidden transition-opacity"
         />
       )}
 
-      {/* Ladder Panel */}
+      {/* Ladder Panel matching classic PowerPoint / VTV3 Tree */}
       <aside
-        className={`fixed lg:static top-0 right-0 h-full z-40 w-72 sm:w-80 bg-gradient-to-b from-[#090e2d] via-[#05081c] to-[#02040f] border-l lg:border-l-0 lg:border-2 border-yellow-500/40 p-4 flex flex-col justify-between shadow-2xl transition-transform duration-300 ease-in-out ${
+        className={`fixed lg:static top-0 right-0 h-full z-40 w-72 sm:w-80 bg-gradient-to-b from-[#0a1236]/95 via-[#04081c]/95 to-[#02040f]/95 border-l-2 lg:border-2 border-amber-500/50 p-3 sm:p-4 flex flex-col justify-between shadow-[0_0_30px_rgba(0,0,0,0.8)] backdrop-blur-md transition-transform duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
         } lg:rounded-2xl lg:h-auto lg:my-auto`}
       >
-        <div className="flex items-center justify-between pb-3 mb-2 border-b border-yellow-500/30">
+        {/* Header */}
+        <div className="flex items-center justify-between pb-2.5 mb-2 border-b border-amber-500/40">
           <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-yellow-400 animate-pulse" />
-            <h3 className="text-sm font-bold tracking-wider text-yellow-400 uppercase">
-              BẢNG TIỀN THƯỞNG
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,1)] animate-ping" />
+            <h3 className="text-xs sm:text-sm font-black tracking-widest text-amber-400 uppercase drop-shadow">
+              THANG TIỀN THƯỞNG
             </h3>
           </div>
           <button
@@ -42,43 +43,60 @@ export const MoneyLadder: React.FC<MoneyLadderProps> = ({ currentLevel, isOpen, 
           </button>
         </div>
 
-        {/* Tiers List */}
-        <div className="flex flex-col gap-1 overflow-y-auto pr-1">
+        {/* Tiers List (15 at top down to 1 at bottom) */}
+        <div className="flex flex-col gap-1 overflow-y-auto pr-0.5">
           {PRIZE_LADDER.map((item) => {
             const isActive = currentLevel === item.level;
             const isPassed = currentLevel > item.level;
             const isMilestone = item.isMilestone;
 
-            let bgStyle = 'bg-white/5 text-gray-300';
+            let rowClasses = 'text-amber-400/90 font-bold';
+            let numClasses = 'text-amber-400 font-bold';
+            let prizeClasses = 'text-amber-400 font-bold';
+            let containerBg = 'bg-white/5 hover:bg-white/10';
+
             if (isActive) {
-              bgStyle =
-                'bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-blue-950 font-black shadow-[0_0_15px_rgba(250,204,21,0.8)] border border-yellow-200 scale-[1.02]';
+              // Active: Glowing golden oval/pill
+              containerBg =
+                'bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-blue-950 font-black shadow-[0_0_20px_rgba(250,204,21,0.9)] border-2 border-yellow-100 scale-[1.03] rounded-full';
+              rowClasses = 'text-blue-950 font-black';
+              numClasses = 'text-blue-950 font-black';
+              prizeClasses = 'text-blue-950 font-black';
             } else if (isMilestone) {
-              bgStyle = 'bg-yellow-500/20 text-yellow-300 font-bold border border-yellow-500/40';
+              // Milestones 5, 10, 15: PURE WHITE text, gold outline
+              containerBg = 'bg-gradient-to-r from-blue-900/40 via-indigo-900/40 to-blue-900/40 border border-amber-400/60 shadow-[0_0_10px_rgba(245,158,11,0.2)] rounded-lg';
+              rowClasses = 'text-white font-black';
+              numClasses = 'text-amber-300 font-bold';
+              prizeClasses = 'text-white font-black drop-shadow';
             } else if (isPassed) {
-              bgStyle = 'bg-emerald-950/30 text-emerald-300/80 line-through';
+              containerBg = 'bg-emerald-950/20 opacity-50 rounded-lg';
+              rowClasses = 'text-emerald-400 line-through';
+              numClasses = 'text-emerald-400/70';
+              prizeClasses = 'text-emerald-300/70';
+            } else {
+              containerBg = 'bg-white/[0.03] rounded-lg';
             }
 
             return (
               <div
                 key={item.level}
-                className={`flex items-center justify-between px-3 py-1.5 rounded-lg text-xs transition-all ${bgStyle}`}
+                className={`flex items-center justify-between px-3 py-1 text-xs transition-all duration-150 ${containerBg} ${rowClasses}`}
               >
                 <div className="flex items-center gap-2">
-                  <span className={`w-6 text-right font-mono font-bold ${isActive ? 'text-blue-950' : isMilestone ? 'text-yellow-400' : 'text-gray-400'}`}>
+                  <span className={`w-5 text-right font-mono font-bold text-xs ${numClasses}`}>
                     {item.level}
                   </span>
-                  {isActive && <span className="text-xs animate-bounce">▶</span>}
-                  {isMilestone && !isActive && <span className="text-[10px] text-yellow-400">★</span>}
+                  {isActive && <span className="text-xs text-blue-950 animate-bounce">▶</span>}
+                  {isMilestone && !isActive && <span className="text-[10px] text-amber-300">★</span>}
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <span className="font-mono tracking-tight font-semibold">
+                <div className="flex items-center gap-1.5 font-mono tracking-tight font-bold text-xs">
+                  <span className={prizeClasses}>
                     {item.prizeFormatted}
                   </span>
                   {item.hasCheck && (
-                    <span className="text-[10px] px-1 py-0.2 bg-yellow-400/20 border border-yellow-400/40 text-yellow-300 rounded font-sans">
-                      Séc
+                    <span className="text-[9px] px-1 py-0.2 bg-amber-400/20 border border-amber-400/50 text-amber-300 rounded font-sans font-black">
+                      SÉC
                     </span>
                   )}
                 </div>
@@ -87,19 +105,19 @@ export const MoneyLadder: React.FC<MoneyLadderProps> = ({ currentLevel, isOpen, 
           })}
         </div>
 
-        {/* Guaranteed Note */}
-        <div className="mt-3 pt-3 border-t border-yellow-500/20 text-[11px] text-gray-400 space-y-1">
-          <div className="flex items-center justify-between text-yellow-300">
-            <span>Mốc 1 (Câu 5):</span>
-            <span className="font-bold">2.000.000 ₫</span>
+        {/* Milestone Footnote */}
+        <div className="mt-2.5 pt-2 border-t border-amber-500/20 text-[11px] text-gray-300 space-y-0.5">
+          <div className="flex items-center justify-between">
+            <span className="text-gray-400">Mốc 1 (Câu 5):</span>
+            <span className="font-bold text-white">2.000.000 ₫</span>
           </div>
-          <div className="flex items-center justify-between text-yellow-300">
-            <span>Mốc 2 (Câu 10):</span>
-            <span className="font-bold">22.000.000 ₫ + Séc</span>
+          <div className="flex items-center justify-between">
+            <span className="text-gray-400">Mốc 2 (Câu 10):</span>
+            <span className="font-bold text-white">22.000.000 ₫ + Séc</span>
           </div>
-          <div className="flex items-center justify-between text-yellow-400 font-bold">
+          <div className="flex items-center justify-between text-amber-400 font-bold">
             <span>Mốc 3 (Câu 15):</span>
-            <span>150.000.000 ₫</span>
+            <span className="text-white font-black">150.000.000 ₫</span>
           </div>
         </div>
       </aside>

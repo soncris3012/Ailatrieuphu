@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import confetti from 'canvas-confetti';
-import { GameSetup, Question, PRIZE_LADDER, PrizeLevel } from '@/types/game';
+import { GameSetup, Question, PRIZE_LADDER } from '@/types/game';
 import { getRandomQuestion } from '@/lib/questionService';
 import { soundManager } from '@/lib/soundManager';
 import { supabase } from '@/lib/supabase';
@@ -65,7 +65,6 @@ export default function GamePage() {
         prize = prevTier ? prevTier.prize : 0;
       }
     } else {
-      // Fallback to guaranteed milestone
       if (currentLevel > 10) {
         prize = 22000000;
       } else if (currentLevel > 5) {
@@ -94,7 +93,7 @@ export default function GamePage() {
             sage1_field: setup.sage1Field,
             sage2_name: setup.sage2Name,
             sage2_field: setup.sage2Field,
-            current_level: isWon ? 15 : currentLevel - 1,
+            current_level: isWon ? 15 : walkedAway ? currentLevel - 1 : currentLevel,
             prize_won: prize,
             has_check: prize >= 22000000,
             status: isWon ? 'won' : walkedAway ? 'quit' : 'lost'
@@ -154,14 +153,12 @@ export default function GamePage() {
   const handleSelectAnswer = async (choice: 'A' | 'B' | 'C' | 'D') => {
     if (gameState !== 'playing' || !currentQuestion) return;
 
-    // Stop timer
     if (timerRef.current) clearInterval(timerRef.current);
 
     setSelectedAnswer(choice);
     setGameState('revealing');
     soundManager.playAnswerSound(choice);
 
-    // Suspense delay
     const isMilestone = currentLevel === 5 || currentLevel === 10 || currentLevel === 15;
     if (isMilestone) {
       soundManager.playSuspense();
@@ -176,16 +173,14 @@ export default function GamePage() {
         setGameState('correct');
         await soundManager.playCorrectSound(choice);
 
-        // Confetti effect
         try {
           confetti({
-            particleCount: isMilestone ? 120 : 60,
+            particleCount: isMilestone ? 150 : 60,
             spread: isMilestone ? 100 : 70,
             origin: { y: 0.6 }
           });
         } catch {}
 
-        // Check Milestone celebrations
         if (currentLevel === 5) {
           await soundManager.playMilestone1();
           setTimeout(() => {
@@ -203,7 +198,6 @@ export default function GamePage() {
           setCheckLevel(15);
           setActiveModal('check');
         } else {
-          // Regular level progress
           setTimeout(() => {
             const nextLv = currentLevel + 1;
             setCurrentLevel(nextLv);
@@ -211,7 +205,6 @@ export default function GamePage() {
           }, 1400);
         }
       } else {
-        // Wrong answer
         setGameState('wrong');
         await soundManager.playWrongSound();
         setTimeout(() => {
@@ -238,7 +231,6 @@ export default function GamePage() {
     soundManager.play5050();
     const options: ('A' | 'B' | 'C' | 'D')[] = ['A', 'B', 'C', 'D'];
     const wrongOptions = options.filter((o) => o !== currentQuestion.correct_answer);
-    // Shuffle and pick 2 to hide
     const toHide = wrongOptions.sort(() => Math.random() - 0.5).slice(0, 2);
     setHiddenAnswers(toHide);
     setLifeline5050(false);
@@ -260,80 +252,99 @@ export default function GamePage() {
     setLifelineCompanion(false);
   };
 
-  // Lifeline: Wise Men (Only level 6+)
+  // Lifeline: Sages (Level 6+)
   const handleUseSage = () => {
-    if (currentLevel < 6) {
-      alert('Quyền trợ giúp Nhà Thông Thái chỉ được mở khóa từ câu hỏi số 6 trở đi!');
-      return;
-    }
-    if (!lifelineSage || gameState !== 'playing' || !currentQuestion) return;
-    soundManager.playWiseMen();
+    if (!lifelineSage || gameState !== 'playing' || !currentQuestion || currentLevel < 6) return;
+    soundManager.playAskAudience();
     setActiveModal('sage');
     setLifelineSage(false);
   };
 
-  // Toggle Sound
+  // Sound toggle
   const handleToggleSound = () => {
     const muted = soundManager.toggleMute();
     setIsMuted(muted);
   };
 
-  // Close Check Modal
-  const handleCloseCheck = () => {
+  // Close check modal and proceed
+  const handleContinueAfterCheck = async () => {
     setActiveModal('none');
-    if (currentLevel === 15) {
+    if (checkLevel === 15) {
       handleGameOver(true, false);
     } else {
-      const nextLv = currentLevel + 1;
+      const nextLv = checkLevel + 1;
       setCurrentLevel(nextLv);
-      loadQuestionForLevel(nextLv);
+      await loadQuestionForLevel(nextLv);
     }
   };
 
-  // Cleanup on unmount
+  // Reset Game
+  const handlePlayAgain = () => {
+    setActiveModal('none');
+    setGameState('setup');
+    setCurrentQuestion(null);
+    setCurrentLevel(1);
+    setSelectedAnswer(null);
+    setHiddenAnswers([]);
+  };
+
+  // Keyboard shortcut listener (A, B, C, D)
   useEffect(() => {
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-      soundManager.stopBGM();
-      soundManager.stopSFX();
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const key = e.key.toUpperCase();
+      if (['A', 'B', 'C', 'D'].includes(key)) {
+        if (!hiddenAnswers.includes(key as 'A' | 'B' | 'C' | 'D')) {
+          handleSelectAnswer(key as 'A' | 'B' | 'C' | 'D');
+        }
+      }
     };
-  }, []);
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [gameState, currentQuestion, hiddenAnswers]);
 
   const currentPrizeItem = PRIZE_LADDER.find((p) => p.level === currentLevel);
 
   return (
-    <main className="relative min-h-screen w-full bg-[#050714] text-white flex flex-col justify-between overflow-x-hidden font-sans select-none">
-      {/* Studio Background Ambient Glow */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-900/30 via-indigo-950/40 to-black pointer-events-none" />
+    <main className="relative min-h-screen w-full bg-[#020512] text-white flex flex-col justify-between overflow-x-hidden font-sans select-none">
+      {/* Studio Stage Lighting & Atmosphere (Matches PowerPoint sample1 & featured) */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#0e2773]/45 via-[#061138]/90 to-[#01040f] pointer-events-none" />
+      <div className="absolute inset-0 bg-[url('/images/studio_background.jpg')] bg-cover bg-center opacity-25 mix-blend-screen pointer-events-none" />
 
-      {/* Top Navbar */}
-      <header className="relative z-20 w-full px-4 sm:px-8 py-3 bg-black/60 backdrop-blur-md border-b border-yellow-500/30 flex items-center justify-between">
+      {/* Top Header Bar */}
+      <header className="relative z-20 w-full px-4 sm:px-8 py-2.5 bg-black/75 backdrop-blur-md border-b-2 border-amber-500/40 flex items-center justify-between shadow-xl">
+        {/* Left: Official ALTP Logo & Player Info */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-yellow-600 to-amber-300 p-0.5 shadow-[0_0_15px_rgba(250,204,21,0.5)]">
-            <div className="w-full h-full rounded-full bg-blue-950 flex items-center justify-center font-bold text-xs text-yellow-300">
-              ALTP
-            </div>
+          <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full border-2 border-amber-400 p-0.5 shadow-[0_0_15px_rgba(245,158,11,0.6)] bg-blue-950 flex items-center justify-center overflow-hidden">
+            <img
+              src="/images/icon_logo_app.png"
+              alt="Ai Là Triệu Phú"
+              className="w-full h-full object-cover scale-110"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+              }}
+            />
           </div>
           <div>
-            <h1 className="text-sm sm:text-base font-black tracking-wider text-yellow-400 uppercase">
+            <h1 className="text-sm sm:text-base font-black tracking-widest text-amber-400 uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
               AI LÀ TRIỆU PHÚ
             </h1>
-            <p className="text-[11px] text-gray-400">
-              Người chơi: <strong className="text-white">{setup?.playerName || '---'}</strong>
+            <p className="text-[11px] text-gray-300">
+              Người chơi: <strong className="text-amber-300 font-bold">{setup?.playerName || '---'}</strong>
             </p>
           </div>
         </div>
 
-        {/* Center Countdown Timer */}
+        {/* Center: Countdown Timer */}
         {gameState !== 'setup' && (
           <div className="flex items-center gap-2">
             <div
-              className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full border-4 flex items-center justify-center font-mono font-black text-lg sm:text-xl shadow-lg transition-colors ${
+              className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full border-4 flex items-center justify-center font-mono font-black text-lg sm:text-xl shadow-[0_0_18px_rgba(0,0,0,0.9)] transition-all ${
                 timeLeft <= 5
-                  ? 'border-red-500 text-red-400 bg-red-950/40 animate-ping'
+                  ? 'border-red-500 text-red-400 bg-red-950/60 animate-ping'
                   : timeLeft <= 10
-                  ? 'border-amber-500 text-amber-400 bg-amber-950/30'
-                  : 'border-cyan-400 text-cyan-300 bg-cyan-950/20'
+                  ? 'border-amber-500 text-amber-300 bg-amber-950/50'
+                  : 'border-cyan-400 text-cyan-200 bg-cyan-950/40 shadow-[0_0_15px_rgba(34,211,238,0.5)]'
               }`}
             >
               {timeLeft}
@@ -346,17 +357,17 @@ export default function GamePage() {
           <button
             onClick={handleToggleSound}
             title={isMuted ? 'Bật âm thanh' : 'Tắt âm thanh'}
-            className="p-2 sm:px-3 sm:py-1.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-xs flex items-center gap-1.5 transition-all"
+            className="p-2 sm:px-3 sm:py-1.5 rounded-lg bg-white/10 hover:bg-white/20 border border-amber-400/30 text-xs flex items-center gap-1.5 transition-all shadow"
           >
             <span>{isMuted ? '🔇' : '🔊'}</span>
-            <span className="hidden sm:inline text-gray-300 font-medium">
+            <span className="hidden sm:inline text-gray-200 font-bold">
               {isMuted ? 'Tắt' : 'Bật'}
             </span>
           </button>
 
           <button
             onClick={() => setActiveModal('leaderboard')}
-            className="p-2 sm:px-3 sm:py-1.5 rounded-lg bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/40 text-yellow-300 text-xs font-bold transition-all"
+            className="p-2 sm:px-3 sm:py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-300 text-xs font-black transition-all shadow-[0_0_10px_rgba(245,158,11,0.2)]"
           >
             🏆 Bảng Vàng
           </button>
@@ -365,47 +376,61 @@ export default function GamePage() {
             onClick={() => setLadderOpen(true)}
             className="lg:hidden p-2 rounded-lg bg-blue-600/30 hover:bg-blue-600/50 border border-blue-400 text-cyan-300 text-xs font-bold"
           >
-            ☰ Mốc Thưởng
+            ☰ Cây Tiền
           </button>
         </div>
       </header>
 
       {/* Main Game Stage */}
-      <div className="relative z-10 flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col lg:flex-row items-center justify-between gap-6">
+      <div className="relative z-10 flex-1 w-full max-w-7xl mx-auto px-2 sm:px-6 py-3 sm:py-5 flex flex-col lg:flex-row items-center justify-between gap-4 sm:gap-6">
         {/* Left / Center Area: Lifelines + Question Box + Answers */}
-        <div className="w-full lg:flex-1 flex flex-col items-center justify-center space-y-5">
-          {/* Lifelines Bar */}
-          <div className="w-full max-w-2xl bg-black/40 backdrop-blur-sm border border-yellow-500/30 rounded-2xl p-3 flex items-center justify-around gap-2 shadow-lg">
+        <div className="w-full lg:flex-1 flex flex-col items-center justify-center space-y-4 sm:space-y-6">
+          {/* Lifelines Bar (PowerPoint Circular Metallic Badges with Red 'X' Overlay) */}
+          <div className="w-full max-w-2xl bg-gradient-to-r from-blue-950/70 via-indigo-950/80 to-blue-950/70 backdrop-blur-md border-2 border-amber-500/40 rounded-full py-2 px-4 sm:px-6 flex items-center justify-around gap-2 shadow-[0_0_20px_rgba(0,0,0,0.8)]">
             {/* 50:50 */}
             <button
               disabled={!lifeline5050 || gameState !== 'playing'}
               onClick={handleUse5050}
-              className={`flex flex-col items-center gap-1 transition-transform ${
+              className={`relative flex flex-col items-center gap-1 transition-transform ${
                 lifeline5050 && gameState === 'playing'
                   ? 'hover:scale-110 active:scale-95 cursor-pointer'
-                  : 'opacity-40 grayscale cursor-not-allowed'
+                  : 'opacity-35 cursor-not-allowed'
               }`}
             >
-              <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-gradient-to-b from-blue-600 to-indigo-900 border-2 border-cyan-400 flex items-center justify-center font-black text-cyan-200 text-xs sm:text-sm shadow-[0_0_12px_rgba(34,211,238,0.5)]">
+              <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-gradient-to-b from-blue-700 via-indigo-900 to-blue-950 border-2 border-amber-400 flex items-center justify-center font-black text-amber-300 text-xs sm:text-sm shadow-[0_0_15px_rgba(245,158,11,0.5)]">
                 50:50
               </div>
-              <span className="text-[10px] text-gray-300 font-semibold">50 : 50</span>
+              {!lifeline5050 && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <span className="text-red-500 font-black text-3xl sm:text-4xl drop-shadow-[0_0_10px_rgba(239,68,68,1)]">
+                    ✕
+                  </span>
+                </div>
+              )}
+              <span className="text-[10px] text-gray-300 font-bold">50 : 50</span>
             </button>
 
-            {/* Gọi điện thoại */}
+            {/* Gọi điện thoại cho người thân */}
             <button
               disabled={!lifelinePhone || gameState !== 'playing'}
               onClick={handleUsePhone}
-              className={`flex flex-col items-center gap-1 transition-transform ${
+              className={`relative flex flex-col items-center gap-1 transition-transform ${
                 lifelinePhone && gameState === 'playing'
                   ? 'hover:scale-110 active:scale-95 cursor-pointer'
-                  : 'opacity-40 grayscale cursor-not-allowed'
+                  : 'opacity-35 cursor-not-allowed'
               }`}
             >
-              <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-gradient-to-b from-blue-600 to-indigo-900 border-2 border-cyan-400 flex items-center justify-center text-lg shadow-[0_0_12px_rgba(34,211,238,0.5)]">
+              <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-gradient-to-b from-blue-700 via-indigo-900 to-blue-950 border-2 border-amber-400 flex items-center justify-center text-lg sm:text-xl shadow-[0_0_15px_rgba(245,158,11,0.5)]">
                 📞
               </div>
-              <span className="text-[10px] text-gray-300 font-semibold truncate max-w-[65px]">
+              {!lifelinePhone && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <span className="text-red-500 font-black text-3xl sm:text-4xl drop-shadow-[0_0_10px_rgba(239,68,68,1)]">
+                    ✕
+                  </span>
+                </div>
+              )}
+              <span className="text-[10px] text-gray-300 font-bold truncate max-w-[65px]">
                 {setup?.phoneFriendName || 'Người thân'}
               </span>
             </button>
@@ -414,39 +439,52 @@ export default function GamePage() {
             <button
               disabled={!lifelineCompanion || gameState !== 'playing'}
               onClick={handleUseCompanion}
-              className={`flex flex-col items-center gap-1 transition-transform ${
+              className={`relative flex flex-col items-center gap-1 transition-transform ${
                 lifelineCompanion && gameState === 'playing'
                   ? 'hover:scale-110 active:scale-95 cursor-pointer'
-                  : 'opacity-40 grayscale cursor-not-allowed'
+                  : 'opacity-35 cursor-not-allowed'
               }`}
             >
-              <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-gradient-to-b from-amber-600 to-yellow-900 border-2 border-amber-400 flex items-center justify-center text-lg shadow-[0_0_12px_rgba(251,191,36,0.5)]">
+              <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-gradient-to-b from-amber-600 via-yellow-800 to-blue-950 border-2 border-amber-400 flex items-center justify-center text-lg sm:text-xl shadow-[0_0_15px_rgba(245,158,11,0.5)]">
                 🤝
               </div>
-              <span className="text-[10px] text-amber-300 font-semibold truncate max-w-[65px]">
+              {!lifelineCompanion && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <span className="text-red-500 font-black text-3xl sm:text-4xl drop-shadow-[0_0_10px_rgba(239,68,68,1)]">
+                    ✕
+                  </span>
+                </div>
+              )}
+              <span className="text-[10px] text-amber-300 font-bold truncate max-w-[65px]">
                 {setup?.companionName || 'Đồng hành'}
               </span>
             </button>
 
-            {/* Hỏi 2 Nhà Thông Thái (Unlocks level 6) */}
+            {/* Hỏi 2 Nhà Thông Thái (Unlocks at level 6) */}
             <button
               disabled={!lifelineSage || gameState !== 'playing' || currentLevel < 6}
               onClick={handleUseSage}
               className={`relative flex flex-col items-center gap-1 transition-transform ${
                 lifelineSage && gameState === 'playing' && currentLevel >= 6
                   ? 'hover:scale-110 active:scale-95 cursor-pointer'
-                  : 'opacity-40 grayscale cursor-not-allowed'
+                  : 'opacity-35 cursor-not-allowed'
               }`}
             >
-              <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-gradient-to-b from-purple-600 to-indigo-950 border-2 border-yellow-400 flex items-center justify-center text-lg shadow-[0_0_15px_rgba(234,179,8,0.6)]">
+              <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-gradient-to-b from-purple-700 via-indigo-900 to-blue-950 border-2 border-amber-400 flex items-center justify-center text-lg sm:text-xl shadow-[0_0_15px_rgba(245,158,11,0.5)]">
                 🧙‍♂️
               </div>
-              {currentLevel < 6 && (
-                <span className="absolute -top-1 -right-1 text-[9px] bg-red-600 text-white px-1 rounded-full font-bold">
-                  🔒
+              {currentLevel < 6 ? (
+                <span className="absolute -top-1 -right-1 text-[9px] bg-red-600 text-white px-1.5 py-0.2 rounded-full font-bold shadow">
+                  🔒 C6
                 </span>
-              )}
-              <span className="text-[10px] text-yellow-300 font-bold">Thông thái</span>
+              ) : !lifelineSage ? (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <span className="text-red-500 font-black text-3xl sm:text-4xl drop-shadow-[0_0_10px_rgba(239,68,68,1)]">
+                    ✕
+                  </span>
+                </div>
+              ) : null}
+              <span className="text-[10px] text-purple-300 font-bold">Thông thái</span>
             </button>
 
             {/* Dừng cuộc chơi */}
@@ -456,133 +494,179 @@ export default function GamePage() {
               className={`flex flex-col items-center gap-1 transition-transform ${
                 gameState === 'playing'
                   ? 'hover:scale-110 active:scale-95 cursor-pointer'
-                  : 'opacity-40 grayscale cursor-not-allowed'
+                  : 'opacity-35 cursor-not-allowed'
               }`}
             >
-              <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-gradient-to-b from-red-600 to-rose-950 border-2 border-red-400 flex items-center justify-center text-lg shadow-[0_0_12px_rgba(244,63,94,0.5)]">
+              <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-gradient-to-b from-red-600 to-rose-950 border-2 border-red-400 flex items-center justify-center text-lg sm:text-xl shadow-[0_0_15px_rgba(244,63,94,0.6)]">
                 🛑
               </div>
-              <span className="text-[10px] text-red-300 font-semibold">Dừng chơi</span>
+              <span className="text-[10px] text-red-300 font-bold">Dừng chơi</span>
             </button>
           </div>
 
-          {/* Question Box */}
+          {/* Hexagonal Question Frame (Matches PowerPoint sample1 / sample2) */}
           <div className="relative w-full max-w-3xl">
-            {/* Question Header Badge */}
-            <div className="flex items-center justify-between px-6 pb-2 text-xs">
-              <span className="font-bold uppercase tracking-wider text-yellow-400 flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-yellow-400 animate-ping" />
-                CÂU HỎI SỐ {currentLevel} / 15
+            {/* Horizontal Connector Line Stretching Across Screen Behind Question Box */}
+            <div className="absolute top-1/2 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-amber-400/80 to-transparent pointer-events-none z-0" />
+
+            {/* Question Top Badge */}
+            <div className="relative z-10 flex items-center justify-between px-6 pb-2 text-xs">
+              <span className="font-black uppercase tracking-wider text-amber-400 flex items-center gap-1.5 drop-shadow">
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+                CÂU HỎI SỐ {currentLevel} / 15 • {currentPrizeItem?.prizeFormatted}
               </span>
-              <span className="px-3 py-0.5 rounded-full bg-cyan-950/80 border border-cyan-400/40 text-cyan-300 font-semibold text-[11px] uppercase tracking-wide">
+              <span className="px-3 py-0.5 rounded-full bg-blue-950/90 border border-amber-400/50 text-amber-300 font-bold text-[11px] uppercase tracking-wider shadow">
                 Chuyên đề: {currentQuestion?.category || 'Kiến thức chung'}
               </span>
             </div>
 
-            {/* Hexagonal Styled Question Container */}
-            <div className="relative p-6 sm:p-8 rounded-3xl bg-gradient-to-b from-[#141d4a] via-[#0d143c] to-[#080d28] border-2 border-yellow-500/80 shadow-[0_0_35px_rgba(234,179,8,0.3)] text-center min-h-[140px] flex items-center justify-center">
-              <p className="text-base sm:text-xl md:text-2xl font-bold text-white tracking-wide leading-relaxed">
-                {currentQuestion ? currentQuestion.question : 'Đang tải câu hỏi từ kho tri thức...'}
-              </p>
+            {/* Outer Hexagon Border Layer */}
+            <div className="relative z-10 p-[2.5px] hex-chamfer bg-gradient-to-r from-amber-600 via-yellow-300 to-amber-600 shadow-[0_0_35px_rgba(245,158,11,0.4)]">
+              {/* Inner Hexagon Fill Layer */}
+              <div className="hex-chamfer bg-gradient-to-b from-[#0b173e] via-[#050c26] to-[#020512] px-8 sm:px-12 py-6 sm:py-8 min-h-[130px] sm:min-h-[150px] flex items-center justify-center text-center">
+                <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-white tracking-wide leading-relaxed drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
+                  {currentQuestion ? currentQuestion.question : 'Đang nạp câu hỏi từ kho tri thức...'}
+                </p>
+              </div>
+            </div>
+
+            {/* Left and Right Tip Diamond Accents */}
+            <div className="absolute top-1/2 -translate-y-1/2 -left-1 w-3 h-3 bg-yellow-400 rotate-45 shadow-[0_0_10px_rgba(250,204,21,1)] z-20 pointer-events-none" />
+            <div className="absolute top-1/2 -translate-y-1/2 -right-1 w-3 h-3 bg-yellow-400 rotate-45 shadow-[0_0_10px_rgba(250,204,21,1)] z-20 pointer-events-none" />
+          </div>
+
+          {/* 4 Hexagonal Answer Boxes (2x2 Grid with Center Diamond Connectors) */}
+          <div className="relative w-full max-w-3xl">
+            {/* Center Diamond Connectors joining row 1 (A-B) and row 2 (C-D) */}
+            <div className="hidden md:block absolute top-[28%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-amber-400 rotate-45 shadow-[0_0_12px_rgba(250,204,21,1)] z-20 pointer-events-none" />
+            <div className="hidden md:block absolute top-[75%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-amber-400 rotate-45 shadow-[0_0_12px_rgba(250,204,21,1)] z-20 pointer-events-none" />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 relative z-10">
+              {(['A', 'B', 'C', 'D'] as const).map((choice) => {
+                const isHidden = hiddenAnswers.includes(choice);
+                const isSelected = selectedAnswer === choice;
+                const isCorrectAnswer = currentQuestion?.correct_answer === choice;
+
+                // Border gradient style
+                let borderGradient =
+                  'from-amber-600/70 via-yellow-400/90 to-amber-600/70 shadow-[0_0_15px_rgba(245,158,11,0.25)]';
+                // Inner background gradient style
+                let innerBg = 'from-[#0b173e] via-[#050c26] to-[#020514]';
+                let textClasses = 'text-white';
+                let prefixClasses = 'text-amber-400';
+
+                if (isHidden) {
+                  return (
+                    <div
+                      key={choice}
+                      className="h-14 sm:h-16 hex-chamfer bg-black/40 border border-white/5 opacity-15 pointer-events-none"
+                    />
+                  );
+                }
+
+                if (gameState === 'revealing' && isSelected) {
+                  // Pulsing Amber-Orange while waiting for MC
+                  borderGradient = 'from-yellow-200 via-white to-yellow-200 shadow-[0_0_30px_rgba(249,115,22,1)]';
+                  innerBg = 'from-amber-500 via-orange-500 to-amber-500 animate-pulse';
+                  textClasses = 'text-blue-950 font-black';
+                  prefixClasses = 'text-white font-black';
+                } else if (gameState === 'correct') {
+                  if (isCorrectAnswer) {
+                    // Flashing Emerald Green
+                    borderGradient = 'from-green-200 via-white to-green-200 shadow-[0_0_40px_rgba(34,197,94,1)] scale-[1.02]';
+                    innerBg = 'from-emerald-600 via-green-500 to-emerald-600 animate-pulse';
+                    textClasses = 'text-white font-black';
+                    prefixClasses = 'text-yellow-200 font-black';
+                  }
+                } else if (gameState === 'wrong') {
+                  if (isSelected) {
+                    // Crimson Red for player's wrong choice
+                    borderGradient = 'from-red-300 via-white to-red-300 shadow-[0_0_35px_rgba(239,68,68,1)]';
+                    innerBg = 'from-red-600 via-rose-600 to-red-700';
+                    textClasses = 'text-white font-black';
+                    prefixClasses = 'text-yellow-200 font-black';
+                  } else if (isCorrectAnswer) {
+                    // Green flashing to reveal correct answer
+                    borderGradient = 'from-green-200 via-white to-green-200 shadow-[0_0_40px_rgba(34,197,94,1)] animate-bounce';
+                    innerBg = 'from-emerald-600 via-green-500 to-emerald-600';
+                    textClasses = 'text-white font-black';
+                    prefixClasses = 'text-yellow-200 font-black';
+                  }
+                }
+
+                const choiceText =
+                  choice === 'A'
+                    ? currentQuestion?.option_a
+                    : choice === 'B'
+                    ? currentQuestion?.option_b
+                    : choice === 'C'
+                    ? currentQuestion?.option_c
+                    : currentQuestion?.option_d;
+
+                return (
+                  <button
+                    key={choice}
+                    disabled={gameState !== 'playing'}
+                    onClick={() => handleSelectAnswer(choice)}
+                    className="group relative w-full text-left transition-transform duration-150 active:scale-95 focus:outline-none"
+                  >
+                    {/* Outer Hexagon Border */}
+                    <div
+                      className={`p-[2px] hex-chamfer bg-gradient-to-r ${borderGradient} transition-all duration-200 group-hover:from-yellow-300 group-hover:to-amber-400 group-hover:shadow-[0_0_25px_rgba(250,204,21,0.6)]`}
+                    >
+                      {/* Inner Hexagon Fill */}
+                      <div
+                        className={`hex-chamfer bg-gradient-to-b ${innerBg} min-h-[56px] sm:min-h-[64px] px-6 sm:px-8 py-3 flex items-center gap-3 transition-colors`}
+                      >
+                        {/* Choice Prefix (A:, B:, C:, D: in bold orange-gold) */}
+                        <span
+                          className={`font-black text-base sm:text-lg tracking-wider flex-shrink-0 ${prefixClasses} drop-shadow`}
+                        >
+                          {choice}:
+                        </span>
+                        {/* Choice Text (Clear bold white) */}
+                        <span
+                          className={`text-xs sm:text-sm md:text-base font-bold leading-snug break-words ${textClasses} drop-shadow`}
+                        >
+                          {choiceText || '...'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Outer Tip Diamond Accent */}
+                    {choice === 'A' || choice === 'C' ? (
+                      <div className="absolute top-1/2 -translate-y-1/2 -left-1 w-2.5 h-2.5 bg-yellow-400 rotate-45 shadow-[0_0_8px_rgba(250,204,21,1)] z-20 pointer-events-none" />
+                    ) : (
+                      <div className="absolute top-1/2 -translate-y-1/2 -right-1 w-2.5 h-2.5 bg-yellow-400 rotate-45 shadow-[0_0_8px_rgba(250,204,21,1)] z-20 pointer-events-none" />
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* 4 Answers Grid */}
-          <div className="w-full max-w-3xl grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-            {(['A', 'B', 'C', 'D'] as const).map((choice) => {
-              const isHidden = hiddenAnswers.includes(choice);
-              const isSelected = selectedAnswer === choice;
-              const isCorrectAnswer = currentQuestion?.correct_answer === choice;
-
-              let btnStyle =
-                'bg-gradient-to-r from-[#0f173b] via-[#151f50] to-[#0f173b] border-cyan-500/50 text-white hover:border-yellow-400 hover:from-[#1b2663]';
-
-              if (isHidden) {
-                return (
-                  <div
-                    key={choice}
-                    className="h-14 sm:h-16 rounded-2xl bg-black/20 border border-white/5 opacity-20 pointer-events-none"
-                  />
-                );
-              }
-
-              if (gameState === 'revealing' && isSelected) {
-                // Pulsing yellow while waiting for MC reveal
-                btnStyle =
-                  'bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 border-yellow-200 text-blue-950 font-black shadow-[0_0_25px_rgba(250,204,21,0.9)] animate-pulse';
-              } else if (gameState === 'correct') {
-                if (isCorrectAnswer) {
-                  // Flashing green for correct answer
-                  btnStyle =
-                    'bg-gradient-to-r from-emerald-600 via-green-500 to-emerald-600 border-green-200 text-white font-black shadow-[0_0_30px_rgba(34,197,94,0.9)] scale-[1.02]';
-                }
-              } else if (gameState === 'wrong') {
-                if (isSelected) {
-                  // Red for player's wrong pick
-                  btnStyle =
-                    'bg-gradient-to-r from-red-600 via-rose-500 to-red-600 border-red-200 text-white font-black shadow-[0_0_30px_rgba(239,68,68,0.9)]';
-                } else if (isCorrectAnswer) {
-                  // Green flashing to show correct one
-                  btnStyle =
-                    'bg-gradient-to-r from-emerald-600 via-green-500 to-emerald-600 border-green-200 text-white font-black shadow-[0_0_30px_rgba(34,197,94,0.9)] animate-bounce';
-                }
-              }
-
-              const choiceText =
-                choice === 'A'
-                  ? currentQuestion?.option_a
-                  : choice === 'B'
-                  ? currentQuestion?.option_b
-                  : choice === 'C'
-                  ? currentQuestion?.option_c
-                  : currentQuestion?.option_d;
-
-              return (
-                <button
-                  key={choice}
-                  disabled={gameState !== 'playing'}
-                  onClick={() => handleSelectAnswer(choice)}
-                  className={`w-full min-h-[56px] sm:min-h-[64px] px-5 py-3 rounded-2xl border-2 flex items-center gap-3.5 text-left transition-all duration-200 shadow-md transform active:scale-95 ${btnStyle}`}
-                >
-                  <span
-                    className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-sm flex-shrink-0 border ${
-                      isSelected && gameState === 'revealing'
-                        ? 'bg-blue-950 text-yellow-400 border-blue-900'
-                        : 'bg-yellow-500/20 text-yellow-300 border-yellow-400/50'
-                    }`}
-                  >
-                    {choice}
-                  </span>
-                  <span className="text-xs sm:text-sm md:text-base font-semibold leading-snug break-words">
-                    {choiceText || '...'}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Current Prize Indicator Ribbon */}
-          <div className="w-full max-w-3xl pt-2 flex items-center justify-between text-xs sm:text-sm text-gray-300 px-4">
-            <div>
-              <span>Mốc hiện tại: </span>
-              <strong className="text-yellow-400 font-mono text-base">
+          {/* Current Prize Ribbon */}
+          <div className="w-full max-w-3xl pt-1 flex items-center justify-between text-xs sm:text-sm text-gray-300 px-4">
+            <div className="flex items-center gap-2">
+              <span className="text-gray-400">Đang thi đấu mốc: </span>
+              <strong className="text-amber-400 font-mono text-base font-black drop-shadow">
                 {currentPrizeItem?.prizeFormatted}
               </strong>
             </div>
             <div>
               {currentLevel > 10 ? (
-                <span className="text-emerald-400 font-semibold">✓ Bảo toàn Mốc 2: 22.000.000 ₫</span>
+                <span className="text-emerald-400 font-bold">✓ Đã bảo toàn Mốc 2: 22.000.000 ₫</span>
               ) : currentLevel > 5 ? (
-                <span className="text-yellow-400 font-semibold">✓ Bảo toàn Mốc 1: 2.000.000 ₫</span>
+                <span className="text-amber-400 font-bold">✓ Đã bảo toàn Mốc 1: 2.000.000 ₫</span>
               ) : (
-                <span className="text-gray-400">Chưa đạt mốc bảo toàn</span>
+                <span className="text-gray-400 font-medium">Chưa đạt mốc bảo toàn</span>
               )}
             </div>
           </div>
         </div>
 
         {/* Right Side Money Ladder (Desktop) */}
-        <div className="hidden lg:block w-72 flex-shrink-0">
+        <div className="hidden lg:block w-72 sm:w-80 flex-shrink-0">
           <MoneyLadder
             currentLevel={currentLevel}
             isOpen={ladderOpen}
@@ -590,7 +674,6 @@ export default function GamePage() {
           />
         </div>
       </div>
-
 
       {/* Floating Ladder Drawer for Mobile */}
       <div className="lg:hidden">
@@ -628,23 +711,23 @@ export default function GamePage() {
         />
       )}
 
-      {activeModal === 'check' && setup && (
+      {activeModal === 'check' && (
         <CheckModal
-          playerName={setup.playerName}
+          playerName={setup?.playerName || 'Người chơi'}
           amount={checkAmount}
           level={checkLevel}
-          onClose={handleCloseCheck}
+          onClose={handleContinueAfterCheck}
         />
       )}
 
-      {activeModal === 'gameover' && setup && (
+      {activeModal === 'gameover' && (
         <GameOverModal
-          playerName={setup.playerName}
+          playerName={setup?.playerName || 'Người chơi'}
           finalPrize={finalPrize}
-          levelReached={isVictory ? 15 : currentLevel}
+          levelReached={currentLevel > 1 ? currentLevel - 1 : 0}
           isVictory={isVictory}
           isWalkAway={isWalkAway}
-          onRestart={() => setGameState('setup')}
+          onRestart={handlePlayAgain}
           onViewLeaderboard={() => setActiveModal('leaderboard')}
         />
       )}

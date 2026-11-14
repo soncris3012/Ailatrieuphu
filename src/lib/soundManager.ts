@@ -131,6 +131,10 @@ class SoundManager {
     return this.playSFX('hoi_y_kien_chuyen_gia_01b.mp3', 0.85);
   }
 
+  public playAskAudience() {
+    return this.playWiseMen();
+  }
+
   public playMilestone1() {
     return this.playSFX('chuc_mung_vuot_moc_01_0.mp3', 1.0);
   }
