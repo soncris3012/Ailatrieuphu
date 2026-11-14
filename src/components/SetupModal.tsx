@@ -9,7 +9,7 @@ interface SetupModalProps {
 }
 
 export const SetupModal: React.FC<SetupModalProps> = ({ onStart }) => {
-  const [playerName, setPlayerName] = useState('Nguyễn Văn An');
+  const [playerName, setPlayerName] = useState('');
   const [companionName, setCompanionName] = useState('Mai Anh');
   const [companionRelation, setCompanionRelation] = useState('Bạn thân');
   const [companionField, setCompanionField] = useState('Địa lý');
@@ -73,14 +73,17 @@ export const SetupModal: React.FC<SetupModalProps> = ({ onStart }) => {
               1. Thông Tin Người Chơi Ghế Nóng
             </h3>
             <div>
-              <label className="block text-[11px] sm:text-xs text-gray-300 font-medium mb-1">Họ và tên người chơi:</label>
+              <label className="block text-[11px] sm:text-xs text-gray-300 font-medium mb-1">
+                Họ và tên người chơi: <span className="text-red-400 font-bold">*</span>
+              </label>
               <input
                 type="text"
                 required
                 value={playerName}
                 onChange={(e) => setPlayerName(e.target.value)}
-                placeholder="Nhập họ tên của bạn..."
+                placeholder="Nhập họ và tên người chơi (bắt buộc)..."
                 className="w-full px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg bg-black/50 border border-yellow-500/50 text-white placeholder-gray-500 focus:outline-none focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 font-semibold text-xs sm:text-sm"
+                autoFocus
               />
             </div>
           </div>
