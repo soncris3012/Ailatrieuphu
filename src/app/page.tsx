@@ -591,10 +591,6 @@ export default function GamePage() {
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="relative z-20 w-full py-2.5 px-4 bg-black/60 border-t border-white/10 text-center text-[11px] text-gray-400">
-        Bản quyền mô phỏng &quot;Ai Là Triệu Phú&quot; • Cơ sở dữ liệu 15.000 câu hỏi Supabase • Âm thanh chuẩn MC Lại Văn Sâm
-      </footer>
 
       {/* Floating Ladder Drawer for Mobile */}
       <div className="lg:hidden">
