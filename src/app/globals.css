@@ -12,34 +12,87 @@
   --font-mono: var(--font-geist-mono);
 }
 
-body {
+html, body {
+  min-height: 100%;
+  width: 100%;
   background: #020617;
   color: #ededed;
   font-family: Arial, Helvetica, sans-serif;
   overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
 }
 
-/* Hexagonal chamfered shapes matching authentic Who Wants to Be a Millionaire / VTV3 PowerPoint format */
+/* Responsive Hexagonal chamfered shapes matching authentic PowerPoint / VTV3 */
 .hex-chamfer {
   clip-path: polygon(
-    24px 0%,
-    calc(100% - 24px) 0%,
+    12px 0%,
+    calc(100% - 12px) 0%,
     100% 50%,
-    calc(100% - 24px) 100%,
-    24px 100%,
+    calc(100% - 12px) 100%,
+    12px 100%,
     0% 50%
   );
+}
+
+@media (min-width: 640px) {
+  .hex-chamfer {
+    clip-path: polygon(
+      22px 0%,
+      calc(100% - 22px) 0%,
+      100% 50%,
+      calc(100% - 22px) 100%,
+      22px 100%,
+      0% 50%
+    );
+  }
 }
 
 .hex-chamfer-sm {
   clip-path: polygon(
-    16px 0%,
-    calc(100% - 16px) 0%,
+    8px 0%,
+    calc(100% - 8px) 0%,
     100% 50%,
-    calc(100% - 16px) 100%,
-    16px 100%,
+    calc(100% - 8px) 100%,
+    8px 100%,
     0% 50%
   );
+}
+
+@media (min-width: 640px) {
+  .hex-chamfer-sm {
+    clip-path: polygon(
+      14px 0%,
+      calc(100% - 14px) 0%,
+      100% 50%,
+      calc(100% - 14px) 100%,
+      14px 100%,
+      0% 50%
+    );
+  }
+}
+
+/* Safe area utilities for foldable screens, dual screens and mobile notches */
+.safe-area-padding {
+  padding-top: max(0.5rem, env(safe-area-inset-top));
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  padding-left: max(0.5rem, env(safe-area-inset-left));
+  padding-right: max(0.5rem, env(safe-area-inset-right));
+}
+
+/* Custom slim scrollbar for ladder and modal lists */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(245, 158, 11, 0.4);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(245, 158, 11, 0.7);
 }
 
 /* Studio stage spotlight animations */
