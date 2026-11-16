@@ -236,9 +236,50 @@ export default function GamePage() {
     setLifeline5050(false);
   };
 
+  // Pause question timer during lifelines
+  const pauseTimer = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
+
+  // Resume question timer after closing lifeline modal
+  const resumeTimerAfterLifeline = useCallback(() => {
+    if (gameState !== 'playing') return;
+    if (timerRef.current) clearInterval(timerRef.current);
+    setTimeLeft((prev) => Math.max(prev, 20));
+    timerRef.current = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          if (timerRef.current) clearInterval(timerRef.current);
+          soundManager.playOutOfTime();
+          handleGameOver(false, false);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, [gameState, handleGameOver]);
+
+  const handleCloseLifelineModal = useCallback(() => {
+    setActiveModal('none');
+    resumeTimerAfterLifeline();
+  }, [resumeTimerAfterLifeline]);
+
+  const handleSelectAnswerFromLifeline = useCallback(
+    (choice: 'A' | 'B' | 'C' | 'D') => {
+      setActiveModal('none');
+      pauseTimer();
+      handleSelectAnswer(choice);
+    },
+    [handleSelectAnswer, pauseTimer]
+  );
+
   // Lifeline: Phone Friend
   const handleUsePhone = () => {
     if (!lifelinePhone || gameState !== 'playing' || !currentQuestion) return;
+    pauseTimer();
     soundManager.playCallFriend();
     setActiveModal('phone');
     setLifelinePhone(false);
@@ -247,6 +288,7 @@ export default function GamePage() {
   // Lifeline: Companion
   const handleUseCompanion = () => {
     if (!lifelineCompanion || gameState !== 'playing' || !currentQuestion) return;
+    pauseTimer();
     soundManager.playCallFriend();
     setActiveModal('companion');
     setLifelineCompanion(false);
@@ -255,6 +297,7 @@ export default function GamePage() {
   // Lifeline: Sages (Level 6+)
   const handleUseSage = () => {
     if (!lifelineSage || gameState !== 'playing' || !currentQuestion || currentLevel < 6) return;
+    pauseTimer();
     soundManager.playAskAudience();
     setActiveModal('sage');
     setLifelineSage(false);
@@ -696,7 +739,8 @@ export default function GamePage() {
         <PhoneModal
           setup={setup}
           question={currentQuestion}
-          onClose={() => setActiveModal('none')}
+          onClose={handleCloseLifelineModal}
+          onSelectAnswer={handleSelectAnswerFromLifeline}
         />
       )}
 
@@ -704,7 +748,8 @@ export default function GamePage() {
         <CompanionModal
           setup={setup}
           question={currentQuestion}
-          onClose={() => setActiveModal('none')}
+          onClose={handleCloseLifelineModal}
+          onSelectAnswer={handleSelectAnswerFromLifeline}
         />
       )}
 
@@ -712,7 +757,8 @@ export default function GamePage() {
         <SageModal
           setup={setup}
           question={currentQuestion}
-          onClose={() => setActiveModal('none')}
+          onClose={handleCloseLifelineModal}
+          onSelectAnswer={handleSelectAnswerFromLifeline}
         />
       )}
 
