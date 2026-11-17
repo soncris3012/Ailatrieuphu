@@ -1,112 +1,133 @@
 @import "tailwindcss";
 
 :root {
-  --background: #020617;
-  --foreground: #ededed;
+  --foreground-rgb: 255, 255, 255;
+  --background-start-rgb: 3, 7, 30;
+  --background-end-rgb: 9, 14, 52;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+body {
+  color: rgb(var(--foreground-rgb));
+  background: radial-gradient(circle at 50% 25%, #0e1e5b 0%, #060b28 55%, #020514 100%);
+  font-family: var(--font-be-vietnam), system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
 }
 
-html, body {
-  min-height: 100%;
-  width: 100%;
-  background: #020617;
-  color: #ededed;
-  font-family: Arial, Helvetica, sans-serif;
-  overflow-x: hidden;
-  -webkit-text-size-adjust: 100%;
+.font-display {
+  font-family: var(--font-montserrat), var(--font-be-vietnam), system-ui, sans-serif;
 }
 
-/* Responsive Hexagonal chamfered shapes matching authentic PowerPoint / VTV3 */
-.hex-chamfer {
-  clip-path: polygon(
-    12px 0%,
-    calc(100% - 12px) 0%,
-    100% 50%,
-    calc(100% - 12px) 100%,
-    12px 100%,
-    0% 50%
-  );
+.font-clock {
+  font-family: var(--font-mono-clock), ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
-@media (min-width: 640px) {
-  .hex-chamfer {
-    clip-path: polygon(
-      22px 0%,
-      calc(100% - 22px) 0%,
-      100% 50%,
-      calc(100% - 22px) 100%,
-      22px 100%,
-      0% 50%
-    );
-  }
-}
-
-.hex-chamfer-sm {
-  clip-path: polygon(
-    8px 0%,
-    calc(100% - 8px) 0%,
-    100% 50%,
-    calc(100% - 8px) 100%,
-    8px 100%,
-    0% 50%
-  );
-}
-
-@media (min-width: 640px) {
-  .hex-chamfer-sm {
-    clip-path: polygon(
-      14px 0%,
-      calc(100% - 14px) 0%,
-      100% 50%,
-      calc(100% - 14px) 100%,
-      14px 100%,
-      0% 50%
-    );
-  }
-}
-
-/* Safe area utilities for foldable screens, dual screens and mobile notches */
 .safe-area-padding {
-  padding-top: max(0.5rem, env(safe-area-inset-top));
-  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
-  padding-left: max(0.5rem, env(safe-area-inset-left));
-  padding-right: max(0.5rem, env(safe-area-inset-right));
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
-/* Custom slim scrollbar for ladder and modal lists */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.25s ease-out forwards;
+}
+
+@keyframes spotlightSweep {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: translateX(-3%) rotate(-12deg) scaleY(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: translateX(3%) rotate(-9deg) scaleY(1.04);
+  }
+}
+
+.animate-spotlight-sweep {
+  animation: spotlightSweep 9s ease-in-out infinite;
+}
+
+@keyframes spotlightSweepAlt {
+  0%,
+  100% {
+    opacity: 0.32;
+    transform: translateX(3%) rotate(12deg) scaleY(1);
+  }
+  50% {
+    opacity: 0.56;
+    transform: translateX(-3%) rotate(9deg) scaleY(1.04);
+  }
+}
+
+.animate-spotlight-sweep-alt {
+  animation: spotlightSweepAlt 11s ease-in-out infinite;
+}
+
+@keyframes amberPulse {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 12px rgba(245, 158, 11, 0.55));
+  }
+  50% {
+    filter: drop-shadow(0 0 24px rgba(251, 191, 36, 0.92));
+  }
+}
+
+.animate-amber-pulse {
+  animation: amberPulse 0.9s ease-in-out infinite;
+}
+
+@keyframes emeraldFlash {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 14px rgba(16, 185, 129, 0.65));
+  }
+  50% {
+    filter: drop-shadow(0 0 28px rgba(52, 211, 153, 1));
+  }
+}
+
+.animate-emerald-flash {
+  animation: emeraldFlash 0.65s ease-in-out infinite;
+}
+
+@keyframes glassShine {
+  0% {
+    transform: translateX(-140%) skewX(-22deg);
+  }
+  100% {
+    transform: translateX(240%) skewX(-22deg);
+  }
+}
+
+.animate-glass-shine {
+  animation: glassShine 4.5s ease-in-out infinite;
+}
+
+/* Custom sleek dark scrollbar */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(2, 6, 23, 0.6);
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(245, 158, 11, 0.4);
-  border-radius: 4px;
+  background: rgba(59, 130, 246, 0.45);
+  border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(245, 158, 11, 0.7);
-}
-
-/* Studio stage spotlight animations */
-@keyframes studio-pulse {
-  0%, 100% {
-    opacity: 0.6;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.9;
-    transform: scale(1.05);
-  }
-}
-
-.animate-studio-pulse {
-  animation: studio-pulse 6s ease-in-out infinite;
 }
