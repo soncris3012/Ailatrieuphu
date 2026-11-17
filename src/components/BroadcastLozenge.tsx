@@ -34,9 +34,9 @@ export const QuestionLozenge: React.FC<QuestionLozengeProps> = ({
       />
 
       {/* Top Centered Broadcast Tag */}
-      <div className="relative z-20 -mb-2.5 flex justify-center">
+      <div className="relative z-20 -mb-1.5 sm:-mb-2.5 flex justify-center">
         <div
-          className={`inline-flex max-w-[94%] flex-wrap items-center justify-center gap-1.5 rounded-full border px-3 py-0.5 text-[10px] sm:text-xs font-extrabold uppercase tracking-wider shadow-[0_2px_12px_rgba(0,0,0,0.75)] ${
+          className={`inline-flex max-w-[92%] flex-wrap items-center justify-center gap-x-1.5 gap-y-0.5 rounded-full border px-2.5 sm:px-3.5 py-0.5 text-[9px] sm:text-xs font-extrabold uppercase tracking-wide sm:tracking-wider shadow-[0_2px_12px_rgba(0,0,0,0.75)] ${
             isMilestone
               ? 'border-amber-200 bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-600 text-slate-950'
               : 'border-sky-300/75 bg-gradient-to-r from-slate-950 via-blue-950 to-slate-950 text-amber-300'
@@ -44,12 +44,12 @@ export const QuestionLozenge: React.FC<QuestionLozengeProps> = ({
         >
           <span>CÂU HỎI SỐ {level}</span>
           {isMilestone && (
-            <span className="rounded bg-slate-950/20 px-1.5 py-0.2 text-[9px] sm:text-[10px] font-black text-slate-950">
+            <span className="rounded bg-slate-950/20 px-1.5 py-0.2 text-[8px] sm:text-[10px] font-black text-slate-950">
               • MỐC AN TOÀN
             </span>
           )}
           <span
-            className={`hidden xs:inline ${
+            className={`hidden sm:inline ${
               isMilestone ? 'text-slate-900/75' : 'text-sky-400/70'
             }`}
           >
@@ -66,7 +66,7 @@ export const QuestionLozenge: React.FC<QuestionLozengeProps> = ({
       </div>
 
       {/* Main Double-Bevel SVG Hexagonal Question Frame */}
-      <div className="relative z-10 w-full min-h-[82px] sm:min-h-[104px] md:min-h-[116px] flex items-center justify-center px-6 sm:px-10 md:px-14 py-4 sm:py-5">
+      <div className="relative z-10 w-full min-h-[84px] sm:min-h-[104px] md:min-h-[116px] flex items-center justify-center px-8 sm:px-12 md:px-16 py-4 sm:py-5">
         <svg
           aria-hidden="true"
           viewBox="0 0 1000 160"
@@ -112,11 +112,11 @@ export const QuestionLozenge: React.FC<QuestionLozengeProps> = ({
         {/* Left & Right internal diamond pips */}
         <span
           aria-hidden="true"
-          className="pointer-events-none absolute left-3.5 sm:left-6 top-1/2 -translate-y-1/2 rotate-45 h-2 w-2 sm:h-2.5 sm:w-2.5 bg-gradient-to-br from-amber-200 to-amber-500 shadow-[0_0_8px_rgba(251,191,36,0.9)]"
+          className="pointer-events-none absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 rotate-45 h-2 w-2 sm:h-2.5 sm:w-2.5 bg-gradient-to-br from-amber-200 to-amber-500 shadow-[0_0_8px_rgba(251,191,36,0.9)]"
         />
         <span
           aria-hidden="true"
-          className="pointer-events-none absolute right-3.5 sm:right-6 top-1/2 -translate-y-1/2 rotate-45 h-2 w-2 sm:h-2.5 sm:w-2.5 bg-gradient-to-br from-amber-200 to-amber-500 shadow-[0_0_8px_rgba(251,191,36,0.9)]"
+          className="pointer-events-none absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 rotate-45 h-2 w-2 sm:h-2.5 sm:w-2.5 bg-gradient-to-br from-amber-200 to-amber-500 shadow-[0_0_8px_rgba(251,191,36,0.9)]"
         />
 
         {/* Question Copy */}

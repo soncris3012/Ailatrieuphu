@@ -270,16 +270,16 @@ export const VTV3LogoCrest: React.FC<VTV3LogoCrestProps> = ({ size = 'lg', class
           );
         })}
 
-        {/* Upper VTV3 arc subtitle */}
+        {/* Upper VTV3 subtitle safely inside globe rim */}
         {showDetailedText && (
           <text
             x="120"
-            y="60"
+            y="74"
             textAnchor="middle"
             fill="#fde68a"
-            fontSize="11.5"
+            fontSize="10"
             fontWeight="800"
-            letterSpacing="3"
+            letterSpacing="1.8"
           >
             VTV3 • CHƯƠNG TRÌNH
           </text>

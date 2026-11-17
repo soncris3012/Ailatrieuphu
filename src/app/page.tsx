@@ -755,7 +755,7 @@ export default function GamePage() {
       {/* IN-GAME HOT SEAT ARENA                            */}
       {/* ================================================= */}
       {gameState === 'playing' && setup && (
-        <div className="relative z-10 flex-1 flex flex-col max-w-7xl w-full mx-auto px-2 sm:px-5 py-2 sm:py-3.5 justify-between">
+        <div className="relative z-10 flex-1 flex flex-col max-w-7xl w-full mx-auto px-3 sm:px-5 py-2 sm:py-3.5 justify-between">
           {/* Broadcast Top Control Header */}
           <header className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-sky-400/30 bg-[#040c2b]/85 px-2.5 sm:px-4 py-2 backdrop-blur-md shadow-[0_8px_24px_rgba(0,0,0,0.65)]">
             {/* Left: Compact Crest + Contestant Info + Safe Prize */}
@@ -832,7 +832,7 @@ export default function GamePage() {
               {/* Top Arena: 4 Lifelines Bar + Live 30s SVG Arc Clock */}
               <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-4 rounded-2xl border border-sky-400/25 bg-[#050d30]/75 px-3 sm:px-4 py-2.5 backdrop-blur-md">
                 {/* 4 Classic Metallic Oval Lifelines */}
-                <div className="grid grid-cols-4 gap-1.5 sm:gap-3 w-full sm:w-auto">
+                <div className="grid grid-cols-4 gap-1 sm:gap-3 w-full sm:w-auto">
                   <button
                     type="button"
                     onClick={handleUse5050}
@@ -843,9 +843,9 @@ export default function GamePage() {
                     <LifelineMedallion
                       kind="5050"
                       used={used5050}
-                      className="w-12 h-8 sm:w-16 sm:h-10 group-hover:scale-105 transition-transform"
+                      className="w-11 h-7 sm:w-16 sm:h-10 group-hover:scale-105 transition-transform"
                     />
-                    <span className="text-[9px] sm:text-[10px] font-bold uppercase text-sky-200/85 truncate max-w-full">
+                    <span className="text-[8px] sm:text-[10px] font-bold uppercase tracking-tight sm:tracking-normal text-sky-200/85 text-center leading-tight">
                       50:50
                     </span>
                   </button>
@@ -867,9 +867,9 @@ export default function GamePage() {
                     <LifelineMedallion
                       kind="phone"
                       used={usedPhone}
-                      className="w-12 h-8 sm:w-16 sm:h-10 group-hover:scale-105 transition-transform"
+                      className="w-11 h-7 sm:w-16 sm:h-10 group-hover:scale-105 transition-transform"
                     />
-                    <span className="text-[9px] sm:text-[10px] font-bold uppercase text-sky-200/85 truncate max-w-full">
+                    <span className="text-[8px] sm:text-[10px] font-bold uppercase tracking-tight sm:tracking-normal text-sky-200/85 text-center leading-tight">
                       Gọi điện
                     </span>
                   </button>
@@ -891,9 +891,9 @@ export default function GamePage() {
                     <LifelineMedallion
                       kind="companion"
                       used={usedCompanion}
-                      className="w-12 h-8 sm:w-16 sm:h-10 group-hover:scale-105 transition-transform"
+                      className="w-11 h-7 sm:w-16 sm:h-10 group-hover:scale-105 transition-transform"
                     />
-                    <span className="text-[9px] sm:text-[10px] font-bold uppercase text-sky-200/85 truncate max-w-full">
+                    <span className="text-[8px] sm:text-[10px] font-bold uppercase tracking-tight sm:tracking-normal text-sky-200/85 text-center leading-tight">
                       Đồng hành
                     </span>
                   </button>
@@ -925,9 +925,9 @@ export default function GamePage() {
                       kind="sage"
                       used={usedSage}
                       locked={currentLevel < 6}
-                      className="w-12 h-8 sm:w-16 sm:h-10 group-hover:scale-105 transition-transform"
+                      className="w-11 h-7 sm:w-16 sm:h-10 group-hover:scale-105 transition-transform"
                     />
-                    <span className="text-[9px] sm:text-[10px] font-bold uppercase text-amber-300/90 truncate max-w-full">
+                    <span className="text-[8px] sm:text-[10px] font-bold uppercase tracking-tight sm:tracking-normal text-amber-300/90 text-center leading-tight">
                       Tổ tư vấn
                     </span>
                   </button>
@@ -1023,7 +1023,7 @@ export default function GamePage() {
                   />
                   {(['A', 'B'] as Choice[]).map((choice) => (
                     <AnswerLozenge
-                      key={choice}
+                      key={`${currentLevel}-${currentQuestion?.question || ''}-${choice}`}
                       letter={choice}
                       text={answerTextMap[choice]}
                       status={getOptionStatus(choice)}
@@ -1041,7 +1041,7 @@ export default function GamePage() {
                   />
                   {(['C', 'D'] as Choice[]).map((choice) => (
                     <AnswerLozenge
-                      key={choice}
+                      key={`${currentLevel}-${currentQuestion?.question || ''}-${choice}`}
                       letter={choice}
                       text={answerTextMap[choice]}
                       status={getOptionStatus(choice)}
